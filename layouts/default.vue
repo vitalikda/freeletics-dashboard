@@ -15,11 +15,18 @@
       </v-btn>
     </v-app-bar>
 
-    <v-navigation-drawer v-model="drawer" app clipped color="grey lighten-4">
-      <v-list dense class="grey lighten-4">
+    <v-navigation-drawer v-model="drawer" app clipped>
+      <v-list>
         <template v-for="(item, i) in items">
           <v-divider v-if="item.divider" :key="i" class="my-4" dark></v-divider>
-          <v-list-item v-else :href="item.link" :key="i" link>
+          <v-list-item
+            v-else
+            :to="item.to"
+            :href="item.href"
+            :target="!item.href ? '' : '_blank'"
+            :key="i"
+            link
+          >
             <v-list-item-action>
               <v-icon>{{ item.icon }}</v-icon>
             </v-list-item-action>
@@ -52,18 +59,18 @@ export default {
     return {
       drawer: null,
       items: [
-        { icon: "mdi-view-dashboard", text: "Dashboard", link: "/" },
-        { icon: "mdi-file-image", text: "Demo Page", link: "/demo" },
+        { icon: "mdi-view-dashboard", text: "Dashboard", to: "/" },
+        { icon: "mdi-file-image", text: "Demo Page", to: "/demo" },
         { divider: true },
         {
           icon: "mdi-github",
           text: "Source",
-          link: "https://github.com/vitalikda/freeletics-dashboard"
+          href: "https://github.com/vitalikda/freeletics-dashboard"
         },
         {
           icon: "mdi-help-circle",
           text: "Help",
-          link: "https://github.com/vitalikda/freeletics-dashboard/issues"
+          href: "https://github.com/vitalikda/freeletics-dashboard/issues"
         }
       ]
     };
