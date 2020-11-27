@@ -1,7 +1,7 @@
 <template>
   <v-row>
     <v-col>
-      <v-container v-show="currentStatus === 3" fluid>
+      <v-container v-show="status === 3" fluid>
         <v-row>
           <v-col>
             <pre>{{ errorText }}</pre>
@@ -9,27 +9,59 @@
         </v-row>
       </v-container>
 
-      <v-container v-show="currentStatus === 0" fluid>
+      <v-container v-show="status < 2" fluid>
         <v-row justify="center" align="center">
           <v-col cols="12" sm="8" md="6">
-            <v-card>
+            <v-card :loading="status === 1" min-height="300">
               <v-card-title class="headline">
-                Upload your Freeletics' data (YAML file)
+                Upload your file
               </v-card-title>
-              <v-card-text>
-                <input
-                  type="file"
-                  @change="fileChange($event.target.files)"
-                  accept=".yaml, .yml"
-                />
-                <!-- <pre>{{ workouts }}</pre> -->
+              <v-card-text
+                class="grey text-center pa-1"
+                :class="$vuetify.theme.dark ? 'darken-3' : 'lighten-4'"
+              >
+                <div
+                  id="dropzone"
+                  class="pa-14"
+                  v-cloak
+                  @drop.prevent="dropFile"
+                  @dragover.prevent
+                  @click="$refs.fileUpload.click()"
+                >
+                  <v-icon class="mt-10 mb-4" size="60">
+                    mdi-file-upload
+                  </v-icon>
+                  <p class="subtitle-1">
+                    Drag & Drop to Upload
+                  </p>
+                  <v-btn @click="$refs.fileUpload.click()" text small>
+                    or browse
+                  </v-btn>
+
+                  <li
+                    v-for="(file, i) in files"
+                    :key="i"
+                    class="list-group-item mb-3 border-top"
+                  >
+                    {{ file.name }} ({{ file.size | kb }} kb)
+                  </li>
+
+                  <input
+                    v-show="false"
+                    type="file"
+                    ref="fileUpload"
+                    @change="addFile"
+                    accept=".yaml, .yml"
+                  />
+                  <!-- <pre>{{ workouts }}</pre> -->
+                </div>
               </v-card-text>
             </v-card>
           </v-col>
         </v-row>
       </v-container>
 
-      <v-container v-show="currentStatus === 2" fluid>
+      <v-container id="workout-stats" v-show="status === 2" fluid>
         <v-row>
           <v-col cols="12" sm="3">
             <v-card shaped>
@@ -55,23 +87,18 @@
               <v-card-text>Years trained</v-card-text>
             </v-card>
           </v-col>
-          <v-col cols="12" sm="3">
-            <v-btn @click="reset" dark large>
-              UPLOAD NEW FILE
-            </v-btn>
-          </v-col>
         </v-row>
       </v-container>
 
-      <v-container fluid>
+      <v-container id="line-chart" v-if="status === 2" fluid>
         <v-row>
           <v-col>
-            <line-chart v-if="currentStatus === 2" :datasets="chartData" />
+            <line-chart :datasets="chartData" />
           </v-col>
         </v-row>
       </v-container>
 
-      <v-container v-show="currentStatus === 2" fluid>
+      <v-container id="workout-table" v-show="status === 2" fluid>
         <v-row>
           <v-col>
             <h1>Workouts</h1>
@@ -110,6 +137,20 @@
           </v-col>
         </v-row>
       </v-container>
+
+      <v-fab-transition>
+        <v-btn
+          @click="$refs.fileUpload.click()"
+          :loading="status === 1"
+          fab
+          dark
+          fixed
+          bottom
+          right
+        >
+          <v-icon>mdi-plus</v-icon>
+        </v-btn>
+      </v-fab-transition>
     </v-col>
   </v-row>
 </template>
@@ -131,7 +172,8 @@ export default {
   },
   data() {
     return {
-      currentStatus: STATUS_INITIAL,
+      files: [],
+      status: STATUS_INITIAL,
       errorText: null,
       workouts: null,
       workoutStats: {
@@ -142,9 +184,14 @@ export default {
       chartData: null
     };
   },
+  filters: {
+    kb(val) {
+      return Math.floor(val / 1024);
+    }
+  },
   methods: {
     reset() {
-      this.currentStatus = STATUS_INITIAL;
+      this.status = STATUS_INITIAL;
       this.errorText = null;
       this.workoutStats = {
         totalWorkouts: 0,
@@ -153,23 +200,35 @@ export default {
       };
       this.chartData = null;
     },
-    fileChange(files) {
-      this.currentStatus = STATUS_LOADING;
-      var file = files[0];
-      if (file) {
+    showError(e) {
+      this.status = STATUS_FAILED;
+      this.errorText = e;
+      console.log(e);
+    },
+    addFile(e) {
+      let file = e.target.files[0];
+      this.handleFile(file);
+    },
+    dropFile(e) {
+      let file = e.dataTransfer.files[0];
+      this.handleFile(file);
+    },
+    handleFile(file) {
+      this.reset();
+      this.status = STATUS_LOADING;
+
+      if (file.type.indexOf("yaml") >= 0) {
         const fr = new FileReader();
         fr.readAsText(file);
-        fr.onload = e => this.processFile(e.target.result);
+        fr.onload = () => this.getWorkouts(fr.result);
       }
     },
-    processFile(content) {
+    getWorkouts(content) {
       try {
         this.workouts = yaml.safeLoad(content).training.trainings;
         this.getWorkoutStats();
       } catch (e) {
-        this.currentStatus = STATUS_FAILED;
-        this.errorText = e;
-        console.log(e);
+        this.showError(e);
       }
     },
     async getWorkoutStats() {
@@ -191,11 +250,9 @@ export default {
           "year"
         );
         this.chartData = await calcWorkouts(this.workouts);
-        this.currentStatus = STATUS_SUCCESS;
+        this.status = STATUS_SUCCESS;
       } catch (e) {
-        this.currentStatus = STATUS_FAILED;
-        this.errorText = e;
-        console.log(e);
+        this.showError(e);
       }
     },
     formatDate(date) {
@@ -205,3 +262,12 @@ export default {
   }
 };
 </script>
+
+<style scoped>
+#dropzone {
+  transition: opacity 0.4s ease-in-out;
+}
+#dropzone:hover {
+  opacity: 0.75;
+}
+</style>
