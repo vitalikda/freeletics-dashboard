@@ -45,15 +45,6 @@
                   >
                     {{ file.name }} ({{ file.size | kb }} kb)
                   </li>
-
-                  <input
-                    v-show="false"
-                    type="file"
-                    ref="fileUpload"
-                    @change="addFile"
-                    accept=".yaml, .yml"
-                  />
-                  <!-- <pre>{{ workouts }}</pre> -->
                 </div>
               </v-card-text>
             </v-card>
@@ -113,10 +104,10 @@
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="(item, idx) in workouts" :key="idx">
+                  <tr v-for="(item, i) in workouts" :key="i">
                     <td>{{ item.workout }}</td>
                     <td>
-                      {{ formatDate(item.performed_at) }}
+                      {{ item.performed_at | fDate }}
                     </td>
                     <td>
                       <v-icon>
@@ -151,6 +142,15 @@
           <v-icon>mdi-plus</v-icon>
         </v-btn>
       </v-fab-transition>
+
+      <!-- For file upload -->
+      <input
+        v-show="false"
+        type="file"
+        ref="fileUpload"
+        @change="addFile"
+        accept=".yaml, .yml"
+      />
     </v-col>
   </v-row>
 </template>
@@ -158,7 +158,7 @@
 <script>
 import yaml from "js-yaml";
 import dayjs from "dayjs";
-import { timestrToSec, secToHrs, calcWorkouts } from "../utils";
+import { calcHours, calcWorkouts } from "../utils";
 import LineChart from "../components/LineChart";
 
 const STATUS_INITIAL = 0,
@@ -187,6 +187,10 @@ export default {
   filters: {
     kb(val) {
       return Math.floor(val / 1024);
+    },
+    fDate(date) {
+      date = new Date(date);
+      return dayjs(date).format("DD MMM YYYY HH:mm:ss");
     }
   },
   methods: {
@@ -234,17 +238,7 @@ export default {
     async getWorkoutStats() {
       try {
         this.workoutStats.totalWorkouts = this.workouts.length;
-        this.workoutStats.hoursTrained = await secToHrs(
-          this.workouts
-            .filter(item => {
-              if (item.time) {
-                return true;
-              }
-            })
-            .reduce((total, item) => {
-              return total + timestrToSec(item.time);
-            }, 0)
-        );
+        this.workoutStats.hoursTrained = await calcHours(this.workouts);
         this.workoutStats.yearsTrained = await dayjs().diff(
           this.workouts[this.workouts.length - 1].performed_at,
           "year"
@@ -254,10 +248,6 @@ export default {
       } catch (e) {
         this.showError(e);
       }
-    },
-    formatDate(date) {
-      date = new Date(date);
-      return dayjs(date).format("DD MMM YYYY HH:mm:ss");
     }
   }
 };

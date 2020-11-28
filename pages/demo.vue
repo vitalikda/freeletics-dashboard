@@ -1,12 +1,20 @@
 <template>
   <v-row>
     <v-col>
-      <v-container fluid>
+      <v-container v-show="status === 3" fluid>
+        <v-row>
+          <v-col>
+            <pre>{{ errorText }}</pre>
+          </v-col>
+        </v-row>
+      </v-container>
+
+      <v-container id="workout-stats" v-show="status === 2" fluid>
         <v-row>
           <v-col cols="12" sm="4">
             <v-card shaped>
               <v-card-title class="display-2">
-                {{ totalWorkouts }}
+                {{ workoutStats.totalWorkouts }}
               </v-card-title>
               <v-card-text>Total workouts</v-card-text>
             </v-card>
@@ -14,7 +22,7 @@
           <v-col cols="12" sm="4">
             <v-card shaped>
               <v-card-title class="display-2">
-                {{ hoursTrained }}
+                {{ workoutStats.hoursTrained }}
               </v-card-title>
               <v-card-text>Hours trained</v-card-text>
             </v-card>
@@ -22,7 +30,7 @@
           <v-col cols="12" sm="4">
             <v-card shaped>
               <v-card-title class="display-2">
-                {{ yearsTrained }}
+                {{ workoutStats.yearsTrained }}
               </v-card-title>
               <v-card-text>Years trained</v-card-text>
             </v-card>
@@ -30,17 +38,15 @@
         </v-row>
       </v-container>
 
-      <v-container fluid>
+      <v-container id="line-chart" v-if="status === 2" fluid>
         <v-row>
           <v-col>
-            <line-chart v-if="loaded" :datasets="chartData" />
+            <line-chart :datasets="chartData" />
           </v-col>
         </v-row>
       </v-container>
 
-      <!-- <pre>{{ chartData }}</pre> -->
-
-      <v-container fluid>
+      <v-container id="workout-table" v-show="status === 2" fluid>
         <v-row>
           <v-col>
             <h1>Workouts</h1>
@@ -55,10 +61,10 @@
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="item in workouts" :key="item.performed_at">
+                  <tr v-for="(item, i) in workouts" :key="i">
                     <td>{{ item.workout }}</td>
                     <td>
-                      {{ formatDate(item.performed_at) }}
+                      {{ item.performed_at | fDate }}
                     </td>
                     <td>
                       <v-icon>
@@ -79,18 +85,19 @@
           </v-col>
         </v-row>
       </v-container>
-
-      <!-- <pre v-for="(item, idx) in workouts" :key="idx">
-        {{ item }}
-      </pre> -->
     </v-col>
   </v-row>
 </template>
 
 <script>
 import dayjs from "dayjs";
-import { timestrToSec, secToHrs, calcWorkouts } from "../utils";
+import { calcHours, calcWorkouts } from "../utils";
 import LineChart from "../components/LineChart";
+
+const STATUS_INITIAL = 0,
+  STATUS_LOADING = 1,
+  STATUS_SUCCESS = 2,
+  STATUS_FAILED = 3;
 
 export default {
   components: {
@@ -98,46 +105,47 @@ export default {
   },
   data() {
     return {
-      loaded: false,
-      workouts: [],
-      totalWorkouts: 0,
-      hoursTrained: 0,
-      yearsTrained: 0,
+      status: STATUS_INITIAL,
+      errorText: null,
+      workouts: null,
+      workoutStats: {
+        totalWorkouts: 0,
+        hoursTrained: 0,
+        yearsTrained: 0
+      },
       chartData: null
     };
   },
   async fetch() {
     const data = await this.$content("/data").fetch();
     this.workouts = data.training.trainings;
+    this.getWorkoutStats();
   },
-  methods: {
-    formatDate(date) {
+  filters: {
+    fDate(date) {
+      date = new Date(date);
       return dayjs(date).format("DD MMM YYYY HH:mm:ss");
     }
   },
-  async mounted() {
-    this.loaded = false;
-    try {
-      this.totalWorkouts = await this.workouts.length;
-      this.hoursTrained = await secToHrs(
-        this.workouts
-          .filter(item => {
-            if (item.time) {
-              return true;
-            }
-          })
-          .reduce((total, item) => {
-            return total + timestrToSec(item.time);
-          }, 0)
-      );
-      this.yearsTrained = await dayjs().diff(
-        this.workouts[this.totalWorkouts - 1].performed_at,
-        "year"
-      );
-      this.chartData = await calcWorkouts(this.workouts);
-      this.loaded = true;
-    } catch (error) {
-      console.error(error);
+  methods: {
+    showError(e) {
+      this.status = STATUS_FAILED;
+      this.errorText = e;
+      console.log(e);
+    },
+    async getWorkoutStats() {
+      try {
+        this.workoutStats.totalWorkouts = this.workouts.length;
+        this.workoutStats.hoursTrained = await calcHours(this.workouts);
+        this.workoutStats.yearsTrained = await dayjs().diff(
+          this.workouts[this.workouts.length - 1].performed_at,
+          "year"
+        );
+        this.chartData = await calcWorkouts(this.workouts);
+        this.status = STATUS_SUCCESS;
+      } catch (e) {
+        this.showError(e);
+      }
     }
   }
 };

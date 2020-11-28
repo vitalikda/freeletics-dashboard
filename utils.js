@@ -1,3 +1,17 @@
+// util to calculate total trained hours
+function calcHours(workouts) {
+  return secToHrs(
+    workouts
+      .filter(item => {
+        if (item.time) {
+          return true;
+        }
+      })
+      .reduce((total, item) => {
+        return total + timestrToSec(item.time);
+      }, 0)
+  );
+}
 // convert time string "00:10:00" to seconds
 function timestrToSec(timestr) {
   var parts = timestr.split(":");
@@ -38,4 +52,4 @@ function calcWorkouts(workouts) {
   return datasets;
 }
 
-export { timestrToSec, secToHrs, calcWorkouts };
+export { calcHours, calcWorkouts };
