@@ -25,10 +25,10 @@
     "url": "https://github.com/vitalikda/freeletics-dashboard"
   },
   "keywords": [
+    "vuetifyjs",
     "freeletics",
     "dashboard",
-    "nuxtjs",
-    "vuetifyjs"
+    "nuxtjs"
   ],
   "author": "Vitaly.im",
   "license": "MIT",
