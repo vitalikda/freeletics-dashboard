@@ -23,21 +23,18 @@ function secondsToHours(seconds) {
 
 // util to calculate data for Line chart
 function getWorkoutsDataForLineChart(workouts) {
-  const m = workouts.map(w => {
-    let date = new Date(w.performed_at);
-    return `${date.getFullYear()}-${date.getMonth()}`;
-  });
-
   // dataset with number of workouts per month in a year, ex { 2019: [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 13, 21, 27 ] }
   const d = {};
-  m.forEach(value => {
-    let [year, month] = value.split("-");
+  workouts.forEach(w => {
+    const date = new Date(w.performed_at);
+    const [year, month] = [date.getFullYear(), date.getMonth()];
 
-    d[year] = d[year]
-      ? // get array of zeros then add +1 in place of current month
-        (d[year] = d[year].map((x, i) => (x = i == month ? x + 1 : x)))
-      : // generate new array of zeros then add 1 in place of current month, ex [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0 ]
-        Array.from({ length: 12 }, (x, i) => (x = i == month ? 1 : 0));
+    if (!d[year]) {
+      // generate new array of zeros, ex [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]
+      d[year] = Array(12).fill(0);
+    }
+    // get array of zeros then increment by 1 in place of current month
+    d[year][month]++;
   });
 
   // prepare data for Line Chart
