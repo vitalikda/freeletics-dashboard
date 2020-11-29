@@ -158,7 +158,7 @@
 <script>
 import yaml from "js-yaml";
 import dayjs from "dayjs";
-import { calcHours, calcWorkouts } from "../utils";
+import { calculateTrainedHours, getWorkoutsDataForLineChart } from "../utils";
 import LineChart from "../components/LineChart";
 
 const STATUS_INITIAL = 0,
@@ -230,6 +230,7 @@ export default {
     getWorkouts(content) {
       try {
         this.workouts = yaml.safeLoad(content).training.trainings;
+        console.log(this.workouts);
         this.getWorkoutStats();
       } catch (e) {
         this.showError(e);
@@ -238,12 +239,14 @@ export default {
     async getWorkoutStats() {
       try {
         this.workoutStats.totalWorkouts = this.workouts.length;
-        this.workoutStats.hoursTrained = await calcHours(this.workouts);
+        this.workoutStats.hoursTrained = await calculateTrainedHours(
+          this.workouts
+        );
         this.workoutStats.yearsTrained = await dayjs().diff(
           this.workouts[this.workouts.length - 1].performed_at,
           "year"
         );
-        this.chartData = await calcWorkouts(this.workouts);
+        this.chartData = await getWorkoutsDataForLineChart(this.workouts);
         this.status = STATUS_SUCCESS;
       } catch (e) {
         this.showError(e);
