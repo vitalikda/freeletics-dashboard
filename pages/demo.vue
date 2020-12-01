@@ -11,37 +11,59 @@
 
       <v-container id="workout-stats" v-show="status === 2" fluid>
         <v-row>
-          <v-col cols="12" sm="4">
+          <v-col cols="12" sm="3">
             <v-card shaped>
               <v-card-title class="display-2">
-                {{ workoutStats.totalWorkouts }}
+                {{ workoutStats.totalWorkouts | fInteger }}
               </v-card-title>
               <v-card-text>Total workouts</v-card-text>
             </v-card>
           </v-col>
-          <v-col cols="12" sm="4">
+          <v-col cols="12" sm="3">
             <v-card shaped>
               <v-card-title class="display-2">
-                {{ workoutStats.hoursTrained }}
+                {{ workoutStats.hoursTrained | fInteger }}
               </v-card-title>
               <v-card-text>Hours trained</v-card-text>
             </v-card>
           </v-col>
-          <v-col cols="12" sm="4">
+          <v-col cols="12" sm="3">
             <v-card shaped>
               <v-card-title class="display-2">
-                {{ workoutStats.yearsTrained }}
+                {{ workoutStats.yearsTrained | fInteger }}
               </v-card-title>
               <v-card-text>Years trained</v-card-text>
+            </v-card>
+          </v-col>
+          <v-col cols="12" sm="3">
+            <v-card shaped>
+              <v-card-title class="display-2">
+                {{ workoutStats.workoutsPerWeek | fInteger }}
+              </v-card-title>
+              <v-card-text>Workouts per week</v-card-text>
             </v-card>
           </v-col>
         </v-row>
       </v-container>
 
-      <v-container id="line-chart" v-if="status === 2" fluid>
+      <v-container id="charts" v-if="status === 2" fluid>
         <v-row>
-          <v-col>
-            <line-chart :datasets="chartData" />
+          <v-col cols="12" sm="8">
+            <v-card>
+              <v-card-text>
+                <line-chart :datasets="lineChartData" />
+              </v-card-text>
+            </v-card>
+          </v-col>
+          <v-col cols="12" sm="4">
+            <v-card>
+              <v-card-text>
+                <doughnut-chart
+                  :labels="doughnutChartData.labels"
+                  :datasets="doughnutChartData.datasets"
+                />
+              </v-card-text>
+            </v-card>
           </v-col>
         </v-row>
       </v-container>
@@ -91,8 +113,13 @@
 
 <script>
 import dayjs from "dayjs";
-import { calculateTrainedHours, getWorkoutsDataForLineChart } from "../utils";
+import {
+  calculateTrainedHours,
+  getWorkoutsDataForLineChart,
+  getWorkoutsDataForDoughnutChart
+} from "../utils";
 import LineChart from "../components/LineChart";
+import DoughnutChart from "../components/DoughnutChart";
 
 const STATUS_INITIAL = 0,
   STATUS_LOADING = 1,
@@ -101,7 +128,8 @@ const STATUS_INITIAL = 0,
 
 export default {
   components: {
-    LineChart
+    LineChart,
+    DoughnutChart
   },
   data() {
     return {
@@ -111,9 +139,12 @@ export default {
       workoutStats: {
         totalWorkouts: 0,
         hoursTrained: 0,
-        yearsTrained: 0
+        yearsTrained: 0,
+        workoutsPerWeek: 0
       },
-      chartData: null
+      lineChartData: null,
+      doughnutChartData: null,
+      doughnutChartOutputLength: 5
     };
   },
   async fetch() {
@@ -125,6 +156,9 @@ export default {
     fDate(date) {
       date = new Date(date);
       return dayjs(date).format("DD MMM YYYY HH:mm:ss");
+    },
+    fInteger(number) {
+      return Math.floor(number);
     }
   },
   methods: {
@@ -143,7 +177,17 @@ export default {
           this.workouts[this.workouts.length - 1].performed_at,
           "year"
         );
-        this.chartData = await getWorkoutsDataForLineChart(this.workouts);
+        this.workoutStats.workoutsPerWeek =
+          this.workouts.length /
+          (await dayjs(this.workouts[0].performed_at).diff(
+            this.workouts[this.workouts.length - 1].performed_at,
+            "week"
+          ));
+        this.lineChartData = await getWorkoutsDataForLineChart(this.workouts);
+        this.doughnutChartData = await getWorkoutsDataForDoughnutChart(
+          this.workouts,
+          this.doughnutChartOutputLength
+        );
         this.status = STATUS_SUCCESS;
       } catch (e) {
         this.showError(e);

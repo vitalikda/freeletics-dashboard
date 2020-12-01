@@ -43,11 +43,53 @@ function getWorkoutsDataForLineChart(workouts) {
     datasets.push({
       label: key,
       data: d[key],
-      backgroundColor: "#" + Math.floor(Math.random() * 16777215).toString(16)
+      backgroundColor: random_rgba()
     });
   });
 
   return datasets;
 }
 
-export { calculateTrainedHours, getWorkoutsDataForLineChart };
+// generate random rgba
+function random_rgba() {
+  let o = Math.round,
+    r = Math.random,
+    s = 255;
+  return `rgba(${o(r() * s)},${o(r() * s)},${o(r() * s)},${r().toFixed(2)})`;
+}
+
+// util to calculate data for Doughnut chart
+function getWorkoutsDataForDoughnutChart(workouts, outputLength) {
+  const d = {};
+  workouts.forEach(w => {
+    const name = w.workout;
+    if (!d[name]) {
+      d[name] = 0;
+    }
+    d[name]++;
+  });
+
+  const chartData = {
+    labels: [],
+    datasets: [{ data: [], backgroundColor: [], borderWidth: 0 }]
+  };
+  Object.keys(d)
+    .sort((a, b) => {
+      return d[b] - d[a];
+    })
+    .forEach((key, index) => {
+      if (index < outputLength) {
+        chartData["labels"].push(key);
+        chartData["datasets"][0]["data"].push(d[key]);
+        chartData["datasets"][0]["backgroundColor"].push(random_rgba());
+      }
+    });
+
+  return chartData;
+}
+
+export {
+  calculateTrainedHours,
+  getWorkoutsDataForLineChart,
+  getWorkoutsDataForDoughnutChart
+};
