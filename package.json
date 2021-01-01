@@ -1,5 +1,5 @@
 {
-  "name": "freeletics-dashboard-v2",
+  "name": "freeletics-dashboard",
   "version": "2.0.0",
   "description": "Simple YAML parser to output pretty charts to show your progress with Freeletics app",
   "repository": {
@@ -7,6 +7,7 @@
     "url": "https://github.com/vitalikda/freeletics-dashboard"
   },
   "keywords": [
+    "apexcharts",
     "file-upload",
     "expressjs",
     "nuxtjs",
