@@ -1,0 +1,52 @@
+{
+  "name": "freeletics-dashboard",
+  "version": "2.0.0",
+  "description": "Simple YAML parser to output pretty charts to show your progress with Freeletics app",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/vitalikda/freeletics-dashboard"
+  },
+  "keywords": [
+    "vuetify",
+    "nuxtjs",
+    "expressjs",
+    "apexcharts",
+    "file-upload"
+  ],
+  "author": "vitaly.im",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/vitalikda/freeletics-dashboard/issues"
+  },
+  "scripts": {
+    "dev": "nuxt",
+    "build": "nuxt build",
+    "start": "nuxt start",
+    "generate": "nuxt generate",
+    "lint:js": "eslint --ext .js,.vue --ignore-path .gitignore .",
+    "lint": "npm run lint:js"
+  },
+  "dependencies": {
+    "@nuxtjs/axios": "^5.12.2",
+    "@nuxtjs/pwa": "^3.0.2",
+    "apexcharts": "^3.23.0",
+    "core-js": "^3.6.5",
+    "cors": "^2.8.5",
+    "dayjs": "^1.9.7",
+    "js-yaml": "^3.14.1",
+    "multer": "^1.4.2",
+    "nuxt": "^2.14.6",
+    "vue-apexcharts": "^1.6.0"
+  },
+  "devDependencies": {
+    "@nuxtjs/eslint-config": "^3.1.0",
+    "@nuxtjs/eslint-module": "^2.0.0",
+    "@nuxtjs/vuetify": "^1.11.2",
+    "babel-eslint": "^10.1.0",
+    "eslint": "^7.10.0",
+    "eslint-config-prettier": "^6.12.0",
+    "eslint-plugin-nuxt": "^1.0.0",
+    "eslint-plugin-prettier": "^3.1.4",
+    "prettier": "^2.1.2"
+  }
+}
